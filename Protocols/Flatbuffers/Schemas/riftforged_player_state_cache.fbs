@@ -1,0 +1,38 @@
+﻿// File: FlatBuffers/Schemas/riftforged_player_state_cache.fbs
+// Version: 0.0.5
+// Description: Defines the high-frequency player state for the in-memory cache (DragonflyDB).
+
+// Include your common types so we can reuse Vec3, Quaternion, and StatusEffectCategory.
+include "riftforged_common_types.fbs";
+
+namespace RiftForged.Cache;
+
+// This table represents the "hot data" for a player that is constantly updated.
+table PlayerStateCache {
+    // The primary key for this data.
+    player_id:ulong (key);
+
+    // Core physics state.
+    position:Networking.Shared.Vec3;
+    orientation:Networking.Shared.Quaternion;
+    velocity:Networking.Shared.Vec3;
+    
+    // Core combat state needed for cross-zone calculations.
+    current_health:int;
+    max_health:int;
+    
+    // A list of active status effects. This is crucial for abilities
+    // that might interact with stunned, rooted, or shielded players from another zone.
+    active_status_effects:[Networking.Shared.StatusEffectCategory];
+    
+    // Metadata for the cache entry.
+    last_update_timestamp:long (deprecated); // Deprecated in favor of a TTL on the key itself.
+    // Let's use a TTL (Time To Live) on the Redis/Dragonfly key instead of a timestamp in the payload.
+    // It's a more idiomatic way to handle data expiration in a cache.
+
+    // ID of the server/shard that currently has authority over this player.
+    current_zone_id:ushort;
+}
+
+// Defines PlayerStateCache as the root type for buffers using this schema.
+root_type PlayerStateCache;

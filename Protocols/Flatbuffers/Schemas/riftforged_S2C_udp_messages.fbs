@@ -1,0 +1,242 @@
+﻿// File: Schemas/riftforged_s2c_udp_messages.fbs
+// Protocol Version: 0.0.5
+// Description: Defines Server-to-Client messages for real-time UDP communication.
+// This file is part of Riftforged.
+// Copyright (C) 2023-2025 Riftforged Game Development Team
+
+include "riftforged_common_types.fbs";
+
+namespace RiftForged.Networking.UDP.S2C;
+
+//-----------------------------------------------------------------------------
+// Supporting S2C Enums
+//-----------------------------------------------------------------------------
+enum ResourceType : byte { Will = 0, Health = 1, Shimmer_Notification = 2 }
+
+enum CombatEventType : byte {
+  None = 0,
+  DamageDealt = 1,
+  HealReceived = 2,
+  Miss = 3,
+  Dodge = 4,
+  Block = 5,
+  Parry = 6,
+  CriticalHit = 7,
+  AbilityInterrupt = 8
+}
+
+// --- NEW FAILURE REASON ENUMS ---
+enum BasicAttackFailureReason : byte {
+  UNKNOWN = 0,
+  ON_COOLDOWN = 1,
+  OUT_OF_RANGE = 2,
+  INVALID_TARGET = 3,
+  NOT_ENOUGH_RESOURCES = 4,
+  OBSTRUCTED = 5 // e.g., line of sight blocked
+}
+
+enum RiftStepFailureReason : byte {
+  UNKNOWN = 0,
+  ON_COOLDOWN = 1,
+  NOT_ENOUGH_RESOURCES = 2,
+  OBSTRUCTED = 3, // Cannot RiftStep through solid objects
+  INVALID_DESTINATION = 4 // e.g., trying to step into a forbidden zone
+}
+
+enum AbilityFailureReason : byte {
+  UNKNOWN = 0,
+  ON_COOLDOWN = 1,
+  NOT_ENOUGH_RESOURCES = 2,
+  INVALID_TARGET = 3,
+  OUT_OF_RANGE = 4,
+  INTERRUPTED = 5,
+  CHANNELING_FAILED = 6,
+  MISSING_REQUIREMENTS = 7 // e.g., wrong weapon type, specific stance
+}
+// --- END NEW FAILURE REASON ENUMS ---
+
+
+//-----------------------------------------------------------------------------
+// S2C Effect Data Table Definitions (for RiftStepEffectPayload and other abilities)
+//-----------------------------------------------------------------------------
+table Effect_AreaDamageData {
+  area_center:RiftForged.Networking.Shared.Vec3;
+  radius:float;
+  damage_info:RiftForged.Networking.Shared.DamageInstance;
+}
+
+table Effect_AreaStunData {
+  area_center:RiftForged.Networking.Shared.Vec3;
+  radius:float;
+  stun_details:RiftForged.Networking.Shared.StunInstance;
+}
+
+table Effect_ApplyBuffDebuffData {
+  buff_debuff_id:RiftForged.Networking.Shared.StatusEffectCategory;
+  duration_ms:uint;
+}
+
+table Effect_PersistentAreaData {
+  area_center:RiftForged.Networking.Shared.Vec3;
+  radius:float;
+  duration_ms:uint;
+  visual_effect_tag:string;
+  applied_effects_on_contact:[RiftForged.Networking.Shared.StatusEffectCategory];
+}
+
+//-----------------------------------------------------------------------------
+// S2C Combat Event Detail Table Definitions (for CombatEventPayload)
+//-----------------------------------------------------------------------------
+table CombatEvent_DamageDealtDetails {
+  source_entity_id:ulong;
+  target_entity_id:ulong;
+  damage_info:RiftForged.Networking.Shared.DamageInstance (required);
+  is_kill:bool = false;
+  is_basic_attack:bool = false;
+}
+
+// For spawning visible projectiles (basic attacks or abilities)
+table S2C_SpawnProjectileMsg {
+  projectile_id:ulong (key);
+  owner_entity_id:ulong;
+  start_position:Shared.Vec3 (required);
+  initial_direction:Shared.Vec3 (required);
+  speed:float;
+  max_range:float;
+  projectile_vfx_tag:string;
+}
+
+// --- NEW FAILURE MESSAGE TABLES ---
+table S2C_BasicAttackFailedMsg {
+  player_id:ulong; // The player who attempted the attack
+  reason:BasicAttackFailureReason;
+  // Optionally, you could include remaining cooldown time here if the client needs to display it
+  // cooldown_remaining_ms:ulong;
+}
+
+table S2C_RiftStepFailedMsg {
+  player_id:ulong; // The player who attempted RiftStep
+  reason:RiftStepFailureReason;
+  // Optional: Add `actual_player_position:Shared.Vec3;` if client needs to re-sync
+}
+
+table S2C_AbilityFailedMsg {
+  player_id:ulong; // The player who attempted the ability
+  ability_id:uint; // The ID of the ability that failed
+  reason:AbilityFailureReason;
+  // Optional: Add more context, e.g., `resource_missing:ResourceType;`
+}
+// --- END NEW FAILURE MESSAGE TABLES ---
+
+
+//-----------------------------------------------------------------------------
+// S2C Unions using the above tables
+//-----------------------------------------------------------------------------
+// Note: FlatBuffers implicitly handles a 'NONE' type for unions (value 0)
+// if no explicit table is assigned to that value.
+union RiftStepEffectPayload : byte {
+  AreaDamage:Effect_AreaDamageData,
+  AreaStun:Effect_AreaStunData,
+  ApplyBuff:Effect_ApplyBuffDebuffData,
+  PersistentArea:Effect_PersistentAreaData
+}
+
+union CombatEventPayload : byte {
+  DamageDealt:CombatEvent_DamageDealtDetails
+  // Add S2C tables for HealReceivedDetails, StatusEffectAppliedDetails etc. here later
+}
+
+//-----------------------------------------------------------------------------
+// Main S2C Message Table Definitions
+//-----------------------------------------------------------------------------
+table S2C_EntityStateUpdateMsg {
+  entity_id:ulong (key);
+  position:RiftForged.Networking.Shared.Vec3;
+  orientation:RiftForged.Networking.Shared.Quaternion;
+  current_health:int;
+  max_health:uint;
+  current_will:int;
+  max_will:uint;
+  server_timestamp_ms:ulong;
+  animation_state_id:uint;
+  active_status_effects:[RiftForged.Networking.Shared.StatusEffectCategory];
+}
+
+table S2C_RiftStepInitiatedMsg {
+  instigator_entity_id:ulong;
+  actual_start_position:RiftForged.Networking.Shared.Vec3;
+  calculated_target_position:RiftForged.Networking.Shared.Vec3;
+  actual_final_position:RiftForged.Networking.Shared.Vec3;
+  cosmetic_travel_duration_sec:float = 0.25;
+  entry_effects:[RiftStepEffectPayload]; // FlatBuffers handles vector of unions by creating type/offset vectors
+  exit_effects:[RiftStepEffectPayload];
+  start_vfx_id:string;
+  travel_vfx_id:string;
+  end_vfx_id:string;
+}
+
+table S2C_ResourceUpdateMsg {
+  resource_type:ResourceType;
+  current_value:int;
+  max_value:uint;
+}
+
+table S2C_CombatEventMsg {
+  event_type:CombatEventType;
+  event_payload:CombatEventPayload (required);
+  server_timestamp_ms:ulong;
+}
+
+table S2C_PongMsg {
+  client_timestamp_ms:ulong;
+  server_timestamp_ms:ulong;
+}
+
+table S2C_SystemBroadcastMsg {
+  message_text:string (required);
+  sender_name:string;
+}
+
+// <<< NEWLY ADDED S2C MESSAGES FOR JOIN PROCESS >>>
+table S2C_JoinSuccessMsg {
+  assigned_player_id:ulong; // The ID the client should use for itself
+  welcome_message:string;             // Optional: e.g., "Welcome to RiftForged Shard Alpha!"
+  server_tick_rate_hz:ushort;         // Optional: Inform client about current server tick rate (in Hz)
+}
+
+table S2C_JoinFailedMsg {
+  reason_message:string;              // E.g., "Server full.", "Invalid character data.", "Authentication failed."
+  reason_code:short;                  // Optional: An enum or error code for specific failure reasons
+}
+// <<< END NEWLY ADDED S2C MESSAGES >>>
+
+
+//-----------------------------------------------------------------------------
+// S2C Root Payload Union and Root Message
+//-----------------------------------------------------------------------------
+union S2C_UDP_Payload { // FlatBuffers will assign type 0 to NONE implicitly if not first
+  // Consider adding an explicit 'NONE_Payload' table if you want to send a typed "no payload".
+  // For now, an unset union (type 0) serves as a functional none.
+  EntityStateUpdate:S2C_EntityStateUpdateMsg,
+  RiftStepInitiated:S2C_RiftStepInitiatedMsg,
+  ResourceUpdate:S2C_ResourceUpdateMsg,
+  CombatEvent:S2C_CombatEventMsg,
+  SpawnProjectile:S2C_SpawnProjectileMsg,
+  SystemBroadcast:S2C_SystemBroadcastMsg,
+  Pong:S2C_PongMsg,
+  S2C_JoinSuccessMsg,
+  S2C_JoinFailedMsg,
+  BasicAttackFailed:S2C_BasicAttackFailedMsg,
+  RiftStepFailed:S2C_RiftStepFailedMsg,
+  AbilityFailed:S2C_AbilityFailedMsg
+  // --- END NEWLY ADDED FAILURE MESSAGES TO UNION ---
+}
+
+table Root_S2C_UDP_Message {
+  //payload_type:S2C_UDP_Payload; // Required field to indicate the type of payload
+  payload: S2C_UDP_Payload; 
+  // This will typically be the raw bytes of the FlatBuffer table, NOT a string.
+                               // FlatBuffers unions handle this for you.
+}
+
+root_type Root_S2C_UDP_Message;

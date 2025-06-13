@@ -1,0 +1,121 @@
+﻿// File: Schemas/riftforged_common_types.fbs
+// Protocol Version: 0.0.5
+// Description: Defines common, shared data structures and enums for RiftForged networking and services.
+
+namespace RiftForged.Networking.Shared;
+
+// --- Core Math Structs ---
+struct Vec3 {
+  x:float;
+  y:float;
+  z:float;
+}
+
+struct Quaternion {
+  x:float;
+  y:float;
+  z:float;
+  w:float;
+}
+
+// --- Enums ---
+
+// Consolidated Damage Types
+enum DamageType : byte {
+  None = 0,
+  Physical = 1,
+  Radiant = 2,      // Fire, Light, Holy
+  Frost = 3,        // Ice, Cold
+  Lightning = 4,    // Shock, Electrical (used for both instant damage and Shock DoTs)
+  Necrotic = 5,     // Life drain, Soul magic
+  Void = 6,         // Shadow, Entropy
+  Cosmic = 7,       // Celestial, Dimensional
+  Poison = 8,
+  Nature = 9,       // Earth, Thorns
+  Aetherial = 10    // Pure, untyped magical energy
+}
+
+// Animation States
+enum AnimationState : uint {
+  Idle = 0,
+  Walking = 1,
+  Running = 2,
+  Rifting_Start = 3,
+  Rifting_Travel = 4,
+  Rifting_End = 5,
+  Attacking_Primary = 6,
+  Stunned = 7,
+  Dead = 8,
+  Frozen = 9
+}
+
+// Stun/CC Severity
+enum StunSeverity : byte {
+  None = 0,
+  Light = 1,
+  Medium = 2,
+  Heavy = 3,
+  Root = 4
+}
+
+// TCP/Reliable UDP Operation Result Codes
+enum OperationResultCode : short {
+  Success = 0,
+  Error_Generic = -1,
+  Error_NotFound = -2,
+  Error_PermissionDenied = -3,
+  Error_InvalidParameters = -4,
+  Error_NotEnoughResources_Will = -10,
+  Error_NotEnoughResources_Shimmer = -11,
+  Error_CooldownActive = -12
+}
+
+// Status Effect Categories
+enum StatusEffectCategory : uint {
+  None = 0,
+  // Crowd Control (Debuffs)
+  Stun_Generic = 1, Stun_SolarDetonation = 2,
+  Freeze_Generic = 10, Root_Generic = 11,
+  Slow_Movement = 20, Slow_AttackSpeed = 21, Slow_CastSpeed = 22,
+  MovementDelay_Generic = 25, AbilityCooldownDelay = 30,
+  // Damage Over Time (Debuffs)
+  DoT_Physical = 50, DoT_Radiant = 51, DoT_Frost = 52, DoT_Lightning = 53, // Renamed from DoT_Shock
+  DoT_Necrotic = 54, DoT_Void = 55, DoT_Cosmic = 56, DoT_Poison = 57, DoT_Nature = 58, DoT_Aetherial = 59,
+  // Vulnerability / Perception (Debuffs)
+  Debuff_DefenseReduction_Generic = 100, Debuff_ElementalResistanceReduction = 101,
+  Debuff_AbilityEffectivenessReduction = 102, Debuff_HealingReduction = 103,
+  MarkedForDamage_Generic = 110, Debuff_AwarenessReduced = 111, Debuff_DistractedByDecoy = 112,
+  // Offensive Buffs
+  Buff_AttackPowerIncrease = 200, Buff_AbilityPowerIncrease = 201, Buff_AttackSpeedIncrease = 202,
+  Buff_CastSpeedIncrease = 203, Buff_CriticalHitChanceIncrease = 204, Buff_CriticalHitDamageIncrease = 205,
+  Buff_LifestealIncrease = 206, Buff_BonusDamageProc = 207, Buff_DamageReflection = 208,
+  Buff_ExecuteInstantAttack = 209, Buff_AbilityDoubleCast = 210,
+  // Defensive Buffs
+  Buff_DamageReduction_Generic = 300, Buff_DamageAbsorption_Shield = 301, Buff_MaxHPArmorIncrease = 302,
+  Buff_ElementalResistanceIncrease = 303, Buff_StatusEffectResistance = 304, Buff_CCImmunity = 305,
+  Buff_PhasingInvulnerability = 306, Buff_HealingIncrease = 307, Buff_HealOverTime_Generic = 308,
+  // Movement & Utility Buffs
+  Buff_MovementSpeedIncrease = 400, Buff_DodgeEnhancement = 401, Buff_Stealth = 402, Buff_MovementAcceleration = 403,
+  // Resource Buffs
+  Buff_EnergyCostReduction = 500, Buff_EnergyRecoveryIncrease = 501, Buff_EnergyRefundOnCast = 502, Buff_PassiveHPRecoveryIncrease = 503,
+  // Special / Mechanics Triggers
+  Effect_ChilledGround = 600, Effect_CooldownReset_Movement = 601, Effect_CooldownReset_Abilities = 602
+}
+
+// --- Data Structs ---
+
+struct DamageInstance {
+  amount:int;
+  type:DamageType;
+  is_crit:bool = false;
+}
+
+struct StunInstance {
+  severity:StunSeverity;
+  duration_ms:uint;
+}
+
+struct BasicItemDescriptor {
+  item_definition_id:uint;
+  quantity:uint;
+}
