@@ -1,15 +1,15 @@
 ﻿// File: Server/ServerEngine.cpp (Refactored)
 
-#include <RiftForged/Server/ServerEngine/ServerEngine.h>
-//#include <RiftForged/Shard/ShardEngine/ShardEngine.h> // Include the new ShardEngine definition
-// ^ This doesn't exist yet
+#include <RiftForged/Core/ServerEngine/ServerEngine.h>
+#include <RiftForged/Core/ShardEngine/ShardEngine.h> // Include the new ShardEngine definition
+
 
 // Include headers for the systems it will CREATE and PASS to the shard
-#include <RiftForged/GameEngine/GameplayEngine.h>
-#include <RiftForged/Physics/PhysicsEngine/PhysicsEngine.h>
-#include <RiftForged/GameLogic/PlayerManager/PlayerManager.h>
-#include <RiftForged/Dispatch/PacketProcessor/PacketProcessor.h>
-#include <RiftForged/Dispatch/Dispatchers/MessageDispatcher.h>
+#include <RiftForged/Core/GameEngine/GameEngine.h>
+#include <RiftForged/Core/PhysicsEngine/PhysicsEngine.h>
+#include <RiftForged/Core/GameEngine/GameLogic/PlayerManager/PlayerManager.h>
+#include <RiftForged/Core/Dispatch/PacketProcessor/PacketProcessor.h>
+#include <RiftForged/Core/Dispatch/Dispatchers/MessageDispatcher.h>
 // ... and all the specific handlers for registration
 
 #include <RiftForged/Server/CacheService/CacheService.h>
