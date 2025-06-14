@@ -65,3 +65,4 @@ namespace RiftForged {
         } // namespace Combat
     } // namespace GameLogic
 } // namespace RiftForged
+} // namespace RiftForged

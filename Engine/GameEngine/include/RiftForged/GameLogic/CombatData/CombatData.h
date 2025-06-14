@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿// File: GameLogic/CombatData/CombatData.h
+// Copyright (c) 2025-202* RiftForged Game Development Team
+
+#pragma once
 
 #include <string>
 #include <vector>
@@ -60,7 +63,7 @@ namespace RiftForged {
                 Utilities::Math::Vec3   impact_point{ 0.0f, 0.0f, 0.0f };
             };
 
-            struct AttackOutcome {
+            struct AbilityOutcome {
                 bool                    success = true;
                 std::string             failure_reason_code;
                 bool                    is_basic_attack = false;
@@ -78,6 +81,11 @@ namespace RiftForged {
                 float                   projectile_max_range = 0.0f;
                 std::string             projectile_vfx_tag;
                 DamageInstance          projectile_damage_on_hit; // NOW uses our GameLogic struct
+            };
+
+            struct PlayerRiftStepFailed {
+                uint64_t    playerId;
+                std::string reason;
             };
 
         } // namespace Combat
